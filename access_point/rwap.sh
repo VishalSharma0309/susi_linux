@@ -1,18 +1,22 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0 ]
+#checks for root permission
+if [ "$(id -u)" -ne 0 ]
 	then echo "Must be root"
 	exit
 fi
 
+# stop and disable hostapd, it cannot run once we have set up wifi
+# and would be re-enabled in wap.sh if necessary
+systemctl stop hostapd
+systemctl disable hostapd
+
 cd /etc/hostapd/
+cp hostapd.conf hostapd.conf.bak
 sed -i '1,14d' hostapd.conf
 
-cd /etc/
-sed -i '57,60d' dhcpcd.conf
-
-cd /etc/network/
-sed -i '9,17d' interfaces
+rm -f /etc/network/interfaces.d/wlan-hostap
+cp /etc/network/interfaces.d/wlan.client /etc/network/interfaces.d/wlan-client
 
 #Empty port 5000
 #Remove the server file from auto-boot

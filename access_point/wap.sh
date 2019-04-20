@@ -1,7 +1,9 @@
 #!/bin/bash
 # To be configured on auto boot-up
 
-if [ "$EUID" -ne 0 ]
+#checks for root privledges by checking the value of effective UID
+#should use "$(id -u)" instead of $EUID since it can be changed by unprivleged user 
+if [ "$(id -u)" -ne 0 ]
 	then echo "Must be root"
 	exit
 fi
@@ -36,22 +38,11 @@ wmm_enabled=1
 ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40]
 EOF
 
-sed -i -- 's/allow-hotplug wlan0//g' /etc/network/interfaces
-sed -i -- 's/iface wlan0 inet manual//g' /etc/network/interfaces
-sed -i -- 's/    wpa-conf \/etc\/wpa_supplicant\/wpa_supplicant.conf//g' /etc/network/interfaces
+#replaces "#DAEMON_CONF=" to "DAEMON_CONF=" hence un-commenting it globally
 sed -i -- 's/#DAEMON_CONF=""/DAEMON_CONF="\/etc\/hostapd\/hostapd.conf"/g' /etc/default/hostapd
 
-cat >> /etc/network/interfaces <<EOF
-# Added by rPi Access Point Setup
-allow-hotplug wlan0
-iface wlan0 inet static
-	address 10.0.0.1
-	netmask 255.255.255.0
-	network 10.0.0.0
-	broadcast 10.0.0.255
-EOF
-
-echo "denyinterfaces wlan0" >> /etc/dhcpcd.conf
+rm -f /etc/network/interfaces.d/wlan-client
+cp /etc/network/interfaces.d/wlan.hostap /etc/network/interfaces.d/wlan-hostap
 
 systemctl enable hostapd
 systemctl enable dnsmasq
